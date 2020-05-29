@@ -408,28 +408,35 @@ void dump_wire(std::ostream &f, std::string indent, RTLIL::Wire *wire)
 	f << stringf("%s;\n", id(wire->name).c_str());
 #else
 	// do not use Verilog-2k "output reg" syntax in Verilog export
-	std::string range = "";
+	std::string signed_range = "";
 	if (wire->width != 1) {
 		if (wire->upto)
-			range = stringf(" [%d:%d]", wire->start_offset, wire->width - 1 + wire->start_offset);
+			if (wire->is_signed)
+				signed_range = stringf(" signed [%d:%d]", wire->start_offset, wire->width - 1 + wire->start_offset);
+			else
+				signed_range = stringf(" [%d:%d]", wire->start_offset, wire->width - 1 + wire->start_offset);
 		else
-			range = stringf(" [%d:%d]", wire->width - 1 + wire->start_offset, wire->start_offset);
+			if (wire->is_signed)
+				signed_range = stringf(" signed [%d:%d]", wire->width - 1 + wire->start_offset, wire->start_offset);
+			else
+				signed_range = stringf(" [%d:%d]", wire->width - 1 + wire->start_offset, wire->start_offset);
 	}
+
 	if (wire->port_input && !wire->port_output)
-		f << stringf("%s" "input%s %s;\n", indent.c_str(), range.c_str(), id(wire->name).c_str());
+		f << stringf("%s" "input%s %s;\n", indent.c_str(), signed_range.c_str(), id(wire->name).c_str());
 	if (!wire->port_input && wire->port_output)
-		f << stringf("%s" "output%s %s;\n", indent.c_str(), range.c_str(), id(wire->name).c_str());
+		f << stringf("%s" "output%s %s;\n", indent.c_str(), signed_range.c_str(), id(wire->name).c_str());
 	if (wire->port_input && wire->port_output)
-		f << stringf("%s" "inout%s %s;\n", indent.c_str(), range.c_str(), id(wire->name).c_str());
+		f << stringf("%s" "inout%s %s;\n", indent.c_str(), signed_range.c_str(), id(wire->name).c_str());
 	if (reg_wires.count(wire->name)) {
-		f << stringf("%s" "reg%s %s", indent.c_str(), range.c_str(), id(wire->name).c_str());
+		f << stringf("%s" "reg%s %s", indent.c_str(), signed_range.c_str(), id(wire->name).c_str());
 		if (wire->attributes.count(ID::init)) {
 			f << stringf(" = ");
 			dump_const(f, wire->attributes.at(ID::init));
 		}
 		f << stringf(";\n");
 	} else if (!wire->port_input && !wire->port_output)
-		f << stringf("%s" "wire%s %s;\n", indent.c_str(), range.c_str(), id(wire->name).c_str());
+		f << stringf("%s" "wire%s %s;\n", indent.c_str(), signed_range.c_str(), id(wire->name).c_str());
 #endif
 }
 
